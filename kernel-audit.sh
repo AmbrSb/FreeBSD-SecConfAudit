@@ -105,12 +105,6 @@ load_rc_config_var _ dumpon_flags
 echo $dumpon_flags | egrep "\-k.+" >/dev/null 2>&1
 check_result "$feature" $?
 
-# kern.coredump_devctl: 0
-# kern.coredump_pack_vmmapinfo: 1
-# kern.coredump_pack_fileinfo: 1
-# debug.elf32_legacy_coredump: 0
-# debug.elf64_legacy_coredump: 0
-
 feature="CPU supports executable space protection (XD/NX)"
 if [ -x `which lscpu` ]; then
 	lscpu | grep -w "Flags:" | grep -w "nx" > /dev/null
@@ -208,9 +202,4 @@ check_result "$feature" $?
 feature="Randomized portrange"
 check_sysctl "net.inet.ip.portrange.randomized" 1
 check_result "$feature" $?
-
-# Check whether kernel dump is encrypted
-# sysctl -n kern.conftxt
-# run some live test like can we debug/truss/ltrace/etc ...
-
 

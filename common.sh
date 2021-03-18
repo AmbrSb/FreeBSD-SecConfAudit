@@ -40,7 +40,7 @@ error()
 	exit 1;
 }
 
-print_c()
+print_field()
 {
 	strlen=`echo -n $1 | wc -m`
 	fieldsz=`expr $strlen + ${fieldspacing}`

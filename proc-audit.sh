@@ -31,9 +31,6 @@
 
 # prequisite packages: pax-utils (for scanelf), procstat
 
-# Running under XAC sandbox
-# chflags nodump, ....
-
 check_process()
 {
 	elfexec=$1
@@ -51,10 +48,6 @@ check_process()
 		setuid="na"
 	fi
 
-	# SETUID/SETGID
-
-	# in jail/chroot
-
 	# relocation readonly
 	# check for presence of GNU_RELRO program header
 	# Full/Partial RELRO
@@ -68,13 +61,13 @@ check_process()
 	# include raw assembly code. Note that we're not talking about inline assembly code,
 	# but rather files like .S which are written in pure assembler.
 
-	# check for propolice stack protection
+	# check for ProPolice stack protection
 	readelf -s ${elfexec} | grep -w "FUNC" | grep -w "UND" | grep "__stack_chk_fail" > /dev/null
 	propolic=$?
 
 	# Executable stack
-	# clang 1.c -o 1 -Wl,-z,relro -Wl,-z,now -s -fstack-protector-all -Wl,-z,noexecstack -Wa,--noexecstack
-	# clang 1.c -o 1 -Wl,-z,relro -Wl,-z,now -s -fstack-protector-all -Wl,-z,execstack
+	# -Wl,-z,noexecstack -Wa,--noexecstack
+	# -Wl,-z,execstack
 	readelf -e ${elfexec} | grep -A1 -w "GNU_STACK" | tail -n 1 | grep -v -w "RWE" > /dev/null
 	nxstack=$?
 
@@ -95,7 +88,8 @@ check_process()
 	readelf -s ${elfexec} | grep "__safestack_init" > /dev/null
 	safestack=$?
 
-	# RUNPATH RPATH
+	# Check if RUNPATH RPATH of running processes are set to directories writable
+	# by non-root users.
 	runpaths=`readelf -d ${elfexec} | grep RUNPATH | awk '{print $5}' | cut -c 2- | rev | cut -c 2- | rev`
 	wrpath=0
 	if [ $? -eq 0 ]; then
@@ -114,23 +108,22 @@ check_process()
 		done
 	fi
 
+	# Print out the result of above checks
 	printf "%-16s%-8s" `basename "${elfexec}"` "${pid}"
-	print_c "CapabilityMode" $capability_mode
-	print_c "writeableRPATH" $wrpath
-	print_c "SetUID" $setuid
-	print_c "Jailed" $jid
-	print_c "RelRO" $relro
-	print_c "BindNow" $bindnow
-	print_c "ProPolice" $propolic
-	print_c "SafeStack" $safestack
-	print_c "NXStack" $nxstack
-	print_c "PIE" $pie
+	print_field "CapabilityMode" $capability_mode
+	print_field "writeableRPATH" $wrpath
+	print_field "SetUID" $setuid
+	print_field "Jailed" $jid
+	print_field "RelRO" $relro
+	print_field "BindNow" $bindnow
+	print_field "ProPolice" $propolic
+	print_field "SafeStack" $safestack
+	print_field "NXStack" $nxstack
+	print_field "PIE" $pie
 	echo
-
-	cfi=$?
-	runpath=$?
 }
 
+# Find all pids of running processes
 pids=`procstat -ab | awk '{print $1}' | tail -n +2 | sort | uniq`
 for pid in $pids; do
 	path=`procstat -b $pid 2>/dev/null | tail -n +2 | awk '{print $4}'`
@@ -138,7 +131,4 @@ for pid in $pids; do
 		check_process ${path} ${pid}
 	fi
 done
-
-# does this system have any libraries with executable stack?
-# scanelf -lpqe > /dev/null
 
