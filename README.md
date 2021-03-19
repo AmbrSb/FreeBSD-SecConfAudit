@@ -21,3 +21,4 @@ These info are extracted either from the ELF file, or directly from the kernel t
 ## Prequisits
 - pax-utils > 1.2.2
 - lscpu > 1.2.0
+- cmake >= 3.5
