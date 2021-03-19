@@ -15,7 +15,8 @@ This is still a work in progress and I am adding new checks and improving existi
 
 - Process checks
 These info are extracted either from the ELF file, or directly from the kernel through kinfo_getproc() system call.
-![image](https://user-images.githubusercontent.com/19773760/111761771-8367ad00-88b5-11eb-89a1-c78f38ec3612.png)
+![image](https://user-images.githubusercontent.com/19773760/111784641-e155be00-88d0-11eb-922a-c3a25ba30b7e.png)
+
 
 ## Prequisits
 - pax-utils > 1.2.2
