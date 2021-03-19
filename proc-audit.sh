@@ -108,9 +108,23 @@ check_process()
 		done
 	fi
 
+	pax=`scanelf -a ${elfexec} | tail -n +2 | awk '{print $2}'`
+	echo $pax | egrep -v "p[Ee][Mm][Rr][Xx][Ss]" \
+			| egrep -v "[Pp]E[Mm][Rr][Xx][Ss]" \
+			| egrep -v "[Pp][Ee]m[Rr][Xx][Ss]" \
+			| egrep -v "[Pp][Ee][Mm]r[Xx][Ss]" \
+			| egrep -v "[Pp][Ee][Mm][Rr][Xx]s"    > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		paxcheck=0
+	else
+		paxcheck=1
+	fi
+
+
 	# Print out the result of above checks
 	printf "%-16s%-8s" `basename "${elfexec}"` "${pid}"
 	print_field "CapabilityMode" $capability_mode
+	print_field ${pax} $paxcheck
 	print_field "writeableRPATH" $wrpath
 	print_field "SetUID" $setuid
 	print_field "Jailed" $jid
