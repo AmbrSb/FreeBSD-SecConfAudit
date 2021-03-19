@@ -34,37 +34,91 @@
 #include <sys/ucred.h>
 
 
-int main(int argc, char *argv[])
+#define SAFE    (0)
+#define UNSAFE  (1)
+#define FAILURE (2)
+
+typedef int safety_t;
+
+/**
+ * Checks whether process with pid `pid` is running in Capsicum
+ * capability mode.
+ */
+safety_t check_capmode(pid_t pid)
 {
-	int capmode = 1;
-	int setuid = 0;
-	pid_t pid;
-	uid_t efu, reu, svu;
-	int jid;
+	int capmode;
+	struct kinfo_proc *kp;
 
-	if (argc != 2)
-		return (1);
-
-	pid = strtoul(argv[1], NULL, 10);
-	struct kinfo_proc *kp = kinfo_getproc(pid);
+	kp = kinfo_getproc(pid);
 	if (!kp)
-		return (2);
+		return (FAILURE);
 	if (kp->ki_cr_flags & CRED_FLAG_CAPMODE)
-		capmode = 0;
-	printf("%d", capmode);
+		capmode = SAFE;
+	else
+		capmode = UNSAFE;
+	free(kp);
 
+	return (capmode);
+}
+
+/**
+ * Checks whether process with pid `pid` is running as setuid
+ */
+safety_t check_setuid(pid_t pid)
+{
+	int setuid;
+	uid_t efu, reu, svu;
+	struct kinfo_proc *kp;
+
+	kp = kinfo_getproc(pid);
+	if (!kp)
+		return (FAILURE);
 	efu = kp->ki_uid;
 	reu = kp->ki_ruid;
 	svu = kp->ki_svuid;
+	free(kp);
 	if (efu != reu || reu !=svu)
-		setuid = 1;
-	printf(" %d", setuid);
-
-	jid = kp->ki_jid;
-	if (jid == 0)
-		printf(" %d", 1);
+		setuid = UNSAFE;
 	else
-		printf(" %d", 0);
+		setuid = SAFE;
+
+	return (setuid);
+}
+
+/**
+ * Checks whether the process with pid `pid` is running in jail
+ * other than jail #0
+ */
+safety_t check_jailed(pid_t pid)
+{
+	int jid;
+	struct kinfo_proc *kp;
+
+	kp = kinfo_getproc(pid);
+	if (!kp)
+		return (FAILURE);
+	jid = kp->ki_jid;
+	free(kp);
+
+	if (jid != 0)
+		return (SAFE);
+	else
+		return (UNSAFE);
+}
+
+int main(int argc, char *argv[])
+{
+	pid_t pid;
+
+	if (argc != 2)
+		return (1);
+	pid = strtoul(argv[1], NULL, 10);
+	if (pid == 0)
+		return (2);
+
+	printf("%d", check_capmode(pid));
+	printf(" %d", check_setuid(pid));
+	printf(" %d", check_jailed(pid));
 
 	return (0);
 }
